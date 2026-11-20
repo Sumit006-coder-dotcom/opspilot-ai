@@ -1,0 +1,179 @@
+name: opspilot
+
+x-app-image: &app-image
+  image: opspilot-ai:local
+  build:
+    context: .
+    dockerfile: Dockerfile
+
+x-mcp-environment: &mcp-environment
+  MCP_TRANSPORT: streamable-http
+  MCP_HOST: 0.0.0.0
+  MCP_PORT: "8000"
+  MCP_LOG_LEVEL: INFO
+  DATABASE_URL: postgresql+psycopg://opspilot:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/opspilot
+  API_TOKEN: ${API_TOKEN:?Set API_TOKEN in .env}
+  VECTOR_DIR: /app/data/vector_store
+  HF_HOME: /home/opspilot/.cache/huggingface
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+
+x-mcp-healthcheck: &mcp-healthcheck
+  test: ["CMD", "python", "-m", "scripts.check_mcp", "--timeout", "8"]
+  interval: 30s
+  timeout: 12s
+  retries: 5
+  start_period: 45s
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: opspilot
+      POSTGRES_USER: opspilot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opspilot -d opspilot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  mcp-database:
+    <<: *app-image
+    command: ["python", "-m", "mcp_servers.database_server"]
+    environment:
+      <<: *mcp-environment
+      OPERLYNT_MCP_DATABASE_URL: http://mcp-database:8000/mcp
+    healthcheck:
+      <<: *mcp-healthcheck
+      test: ["CMD", "python", "-m", "scripts.check_mcp", "database", "--timeout", "8"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mcp-ecommerce:
+    <<: *app-image
+    command: ["python", "-m", "mcp_servers.ecommerce_server"]
+    environment:
+      <<: *mcp-environment
+      OPERLYNT_MCP_ECOMMERCE_URL: http://mcp-ecommerce:8000/mcp
+    healthcheck:
+      <<: *mcp-healthcheck
+      test: ["CMD", "python", "-m", "scripts.check_mcp", "ecommerce", "--timeout", "8"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mcp-it-operations:
+    <<: *app-image
+    command: ["python", "-m", "mcp_servers.it_operations_server"]
+    environment:
+      <<: *mcp-environment
+      OPERLYNT_MCP_IT_OPERATIONS_URL: http://mcp-it-operations:8000/mcp
+    healthcheck:
+      <<: *mcp-healthcheck
+      test: ["CMD", "python", "-m", "scripts.check_mcp", "it_operations", "--timeout", "8"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mcp-documents:
+    <<: *app-image
+    command: ["python", "-m", "mcp_servers.document_server"]
+    environment:
+      <<: *mcp-environment
+      OPERLYNT_MCP_DOCUMENTS_URL: http://mcp-documents:8000/mcp
+    volumes:
+      - vectordata:/app/data/vector_store
+      - modelcache:/home/opspilot/.cache/huggingface
+    healthcheck:
+      <<: *mcp-healthcheck
+      test: ["CMD", "python", "-m", "scripts.check_mcp", "documents", "--timeout", "8"]
+    restart: unless-stopped
+
+  api:
+    <<: *app-image
+    command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      DEMO_MODE: ${DEMO_MODE:-true}
+      LLM_PROVIDER: ${LLM_PROVIDER:-groq}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-meta-llama/llama-3.3-70b-instruct}
+      API_TOKEN: ${API_TOKEN:?Set API_TOKEN in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-30}
+      ADMIN_BOOTSTRAP_KEY: ${ADMIN_BOOTSTRAP_KEY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8501,http://127.0.0.1:8501}
+      DATABASE_URL: postgresql+psycopg://opspilot:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/opspilot
+      UPLOAD_DIR: /app/data/uploads
+      VECTOR_DIR: /app/data/vector_store
+      WORKFLOW_CHECKPOINT_PATH: /app/data/workflows/checkpoints.sqlite
+      HF_HOME: /home/opspilot/.cache/huggingface
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      RAG_CHUNK_SIZE: ${RAG_CHUNK_SIZE:-800}
+      RAG_CHUNK_OVERLAP: ${RAG_CHUNK_OVERLAP:-150}
+      RAG_TOP_K: ${RAG_TOP_K:-4}
+      RAG_SIMILARITY_THRESHOLD: ${RAG_SIMILARITY_THRESHOLD:-0.18}
+      MCP_TIMEOUT_SECONDS: ${MCP_TIMEOUT_SECONDS:-180}
+      OPERLYNT_MCP_DATABASE_URL: http://mcp-database:8000/mcp
+      OPERLYNT_MCP_ECOMMERCE_URL: http://mcp-ecommerce:8000/mcp
+      OPERLYNT_MCP_IT_OPERATIONS_URL: http://mcp-it-operations:8000/mcp
+      OPERLYNT_MCP_DOCUMENTS_URL: http://mcp-documents:8000/mcp
+    volumes:
+      - vectordata:/app/data/vector_store
+      - upload_data:/app/data/uploads
+      - workflow_data:/app/data/workflows
+      - modelcache:/home/opspilot/.cache/huggingface
+    ports:
+      - "${API_BIND:-127.0.0.1}:${API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=4)"]
+      interval: 15s
+      timeout: 6s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      db:
+        condition: service_healthy
+      mcp-database:
+        condition: service_healthy
+      mcp-ecommerce:
+        condition: service_healthy
+      mcp-it-operations:
+        condition: service_healthy
+      mcp-documents:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    <<: *app-image
+    command: ["streamlit", "run", "frontend/app.py", "--server.address=0.0.0.0", "--server.port=8501"]
+    environment:
+      OPERLYNT_API: http://api:8000
+    ports:
+      - "${API_BIND:-127.0.0.1}:${FRONTEND_PORT:-8501}:8501"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=4)"]
+      interval: 15s
+      timeout: 6s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  vectordata:
+  upload_data:
+  workflow_data:
+  modelcache:

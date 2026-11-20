@@ -1,0 +1,22 @@
+{
+  "measured_at": "2026-11-18",
+  "environment": "local Windows Python 3.13.7; FastAPI TestClient; SQLite; local stdio MCP",
+  "api_health": {
+    "scenario": "GET /health, 20 sequential requests",
+    "requests": 20,
+    "client_elapsed_ms_median": 5.03,
+    "client_elapsed_ms_p95": 5.877,
+    "client_elapsed_ms_max": 8.186,
+    "all_status_200": true
+  },
+  "mcp_database_tool": {
+    "scenario": "database.get_return_statistics, 5 sequential calls",
+    "calls": 5,
+    "elapsed_ms": [5177.713, 21.032, 24.054, 20.452, 23.169],
+    "median_ms": 23.55,
+    "max_ms": 5177.713,
+    "notes": "First call includes stdio server startup and tool discovery; subsequent calls reuse the persistent connection."
+  },
+  "rag_retrieval": {"status": "not_measured"},
+  "agent_workflow": {"status": "not_measured"}
+}

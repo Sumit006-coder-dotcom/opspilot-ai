@@ -1,0 +1,18 @@
+[
+  {
+    "id": "returns_defect_001",
+    "query": "What should a customer do when a product arrives defective?",
+    "relevant_documents": ["Ecommerce_Return_Policy.txt"],
+    "relevant_phrases": ["defective", "return"],
+    "answer": "For a defective product, the customer should request a return.",
+    "supported_claims": ["A defective product can be returned."]
+  },
+  {
+    "id": "it_escalation_001",
+    "query": "When should a critical incident be escalated?",
+    "relevant_documents": ["IT_Troubleshooting_Guide.txt"],
+    "relevant_phrases": ["critical", "escalat"],
+    "answer": "Escalate critical incidents according to the incident procedure.",
+    "supported_claims": ["Critical incidents have an escalation procedure."]
+  }
+]

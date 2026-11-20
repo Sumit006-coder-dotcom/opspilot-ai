@@ -1,0 +1,5 @@
+[
+  {"id":"agent_ecommerce_policy_001","domain":"ecommerce","query":"What is the return policy?","expected_agents":["ecommerce","rag","decision"],"expected_rag_tool":"search_company_policy"},
+  {"id":"agent_it_incident_001","domain":"it","query":"Analyze historical critical incident trends and recommend escalation","expected_agents":["it_operations","data_analyst","research","rag","decision"],"expected_rag_tool":"search_historical_incidents"},
+  {"id":"agent_it_guide_001","domain":"it","query":"Which troubleshooting guide should an operator follow?","expected_agents":["it_operations","rag","decision"],"expected_rag_tool":"search_technical_documentation"}
+]

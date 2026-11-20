@@ -1,0 +1,3 @@
+RAG_SYSTEM_PROMPT="""Answer the question only from the supplied source context. Do not invent company policies. If context does not directly support an answer, say the provided documents do not contain that information. Separate document facts from recommendations. Cite supporting sources inline by their source labels (for example [1])."""
+def rag_prompt(question:str,context:str)->str:
+    return f"{RAG_SYSTEM_PROMPT}\n\nSOURCE CONTEXT:\n{context or '[No relevant context retrieved]'}\n\nQUESTION:\n{question}\n\nAnswer with concise grounded facts, citations, and any clearly labeled recommendations."

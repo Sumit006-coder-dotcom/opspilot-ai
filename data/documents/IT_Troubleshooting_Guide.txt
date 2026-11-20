@@ -1,0 +1,2 @@
+IT Troubleshooting Guide
+For network connectivity incidents, first check service health and recent changes, then validate DNS resolution and gateway reachability. For identity and access issues, verify account state and recent authentication errors before changing permissions. Preserve relevant logs. Escalate repeated failures across multiple users as a possible service outage. Avoid destructive remediation without approval.

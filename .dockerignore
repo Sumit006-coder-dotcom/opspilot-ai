@@ -1,0 +1,27 @@
+# Build context excludes secrets, local state, caches, and generated artifacts.
+.env
+.env.*
+!.env.example
+.git
+.github
+.pytest_cache
+.venv
+venv
+__pycache__
+*.py[cod]
+*.db
+*.sqlite
+*.sqlite-*
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+dist
+build
+*.egg-info
+data/uploads/**
+data/vector_store/**
+data/workflow_checkpoints.sqlite*
+data/workflows/**
+**/.DS_Store
+Thumbs.db

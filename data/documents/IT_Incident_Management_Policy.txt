@@ -1,0 +1,2 @@
+IT Incident Management Policy
+Critical incidents affecting a customer-facing or business-critical service require immediate incident commander assignment and escalation. High severity incidents should receive an initial response within 30 minutes. Keep status updates in the incident record. Resolve only after service restoration is verified. Changes to production status require approval from an authorized operator.

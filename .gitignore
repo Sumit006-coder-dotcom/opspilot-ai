@@ -1,0 +1,41 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Local databases and mutable application state
+*.db
+*.sqlite
+*.sqlite-*
+data/uploads/**
+!data/uploads/.gitkeep
+data/vector_store/**
+!data/vector_store/.gitkeep
+data/workflows/**
+data/workflow_checkpoints.sqlite*
+
+# Model caches, container output, and editor/OS files
+.cache/
+model_cache/
+models/
+.docker/
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
